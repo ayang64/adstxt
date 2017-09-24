@@ -30,7 +30,7 @@ func (a *AdsTxt) parseBuyerRecord(line string) error {
 	col := strings.Split(line, ",")
 	if len(col) != 4 {
 		// Something is very wrong here.
-		return fmt.Errorf("Could not identify entity records.")
+		return fmt.Errorf("Could not extract buyer records.")
 	}
 	a.Partner = append(a.Partner,
 		Buyer{
@@ -47,7 +47,7 @@ func (a *AdsTxt) parseBuyerRecord(line string) error {
 //
 // i'm not sure how to write a generic parser for the variabels because the
 // spec is ambiguous when it comes to if '=' can appear within the comma
-// separated entity record.  it is possible to confuse a valid entity with
+// separated buyer record.  it is possible to confuse a valid buyer with
 // a variable.
 //
 // so instead i only look for "CONTACT=" and "SUBDOMAINS=".
@@ -55,7 +55,6 @@ func (a *AdsTxt) parseBuyerRecord(line string) error {
 // naughty spec!
 //
 func (a *AdsTxt) parseVariable(line string) error {
-
 	for _, v := range []string{"CONTACT", "SUBDOMAIN"} {
 		tok := v + "="
 		if len(line) >= len(tok) && strings.ToUpper(line[:len(tok)]) == tok {
