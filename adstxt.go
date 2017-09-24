@@ -77,10 +77,8 @@ func Parse(srcurl, txt string) (AdsTxt, error) {
 	}
 
 	// create a scanner that reads line by line.
-	scanner := bufio.NewScanner(strings.NewReader(txt))
 
-	for scanner.Scan() {
-		fmt.Printf(">> %s", scanner.Text())
+	for scanner := bufio.NewScanner(strings.NewReader(txt)); scanner.Scan(); {
 		line := strings.TrimSpace(scanner.Text())
 
 		// record is blank.
