@@ -29,10 +29,16 @@ type Buyer struct {
 func (a *AdsTxt) parseBuyerRecord(line string) error {
 	// if we made it here, we should look for a comma separated list.
 	col := strings.Split(line, ",")
-	if len(col) != 4 {
+	if len(col) != 3 && len(col) != 4 {
 		// Something is very wrong here.
 		return fmt.Errorf("Could not extract buyer records.")
 	}
+
+	if len(col) == 3 {
+		// add an empty optional certificate authority field if it wasn't specified.
+		col = append(col, "")
+	}
+
 	a.Partner = append(a.Partner,
 		Buyer{
 			Domain:                 strings.TrimSpace(col[0]),
@@ -117,6 +123,12 @@ func fetch(url string, rc chan<- AdsTxt, wg *sync.WaitGroup) {
 	}()
 
 	resp, err := http.Get(url)
+
+	if err != nil {
+		rc <- AdsTxt{Source: url}
+		return
+	}
+
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -137,10 +149,13 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 
 	ads := make(chan AdsTxt)
 
+	domains := make(map[string]struct{})
+
 	go func() {
 		// make sure we close we our ads channel on return.
 		defer close(ads)
 		results := make(chan AdsTxt, len(urls))
+		defer close(results)
 
 		wg := sync.WaitGroup{}
 		wg.Add(len(urls))
@@ -148,21 +163,20 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 		// dispatch web queries.
 		go func() {
 			for _, url := range urls {
+				domains[url] = struct{}{}
 				go fetch(url, results, &wg)
 			}
 		}()
 
-		wg.Wait()
-		close(results)
-
-		for {
+		for i := 0; true; {
 			select {
-			case r, open := <-results:
-				if open == false {
-					// channel was closed.
+			case r := <-results:
+				ads <- r
+				i++
+				delete(domains, r.Source)
+				if i == len(urls) {
 					return
 				}
-				ads <- r
 			case <-ctx.Done():
 				// deadline reached.
 				return
