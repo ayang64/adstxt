@@ -12,15 +12,15 @@ The spec is pretty simple.  This package simlpy parses the ads.txt file.
 package main
 
 import (
-		"time"
-		"github.com/ayang64/adstxt"
-		"log"
+	"github.com/ayang64/adstxt"
+	"log"
+	"time"
 )
 
 func main() {
 
-	ctx, cancel := context.WithTimeout(context.Background, time.Millisecond * 500)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background, time.Millisecond*500)
+	defer cancel()
 
 	ads, err := adstxt.Fetch(ctx, "https://www.example.com/ads.txt", "https://www.example2.com/ads.txt")
 
