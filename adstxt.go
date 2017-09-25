@@ -149,8 +149,6 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 
 	ads := make(chan AdsTxt)
 
-	domains := make(map[string]struct{})
-
 	go func() {
 		// make sure we close we our ads channel on return.
 		defer close(ads)
@@ -163,7 +161,6 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 		// dispatch web queries.
 		go func() {
 			for _, url := range urls {
-				domains[url] = struct{}{}
 				go fetch(url, results, &wg)
 			}
 		}()
@@ -173,7 +170,6 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 			case r := <-results:
 				ads <- r
 				i++
-				delete(domains, r.Source)
 				if i == len(urls) {
 					return
 				}

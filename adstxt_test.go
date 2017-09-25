@@ -14,6 +14,21 @@ func TestParse(t *testing.T) {
 		Contents string
 	}{
 		{
+			Name:   "AV Club",
+			Domain: "avclub.com",
+			Contents: `sonobi.com, 93ee4e8333, DIRECT
+amazon-adsystem.com, 3076, DIRECT
+facebook.com, 743604429120938, DIRECT
+rubiconproject.com, 12156, DIRECT
+indexexchange.com, 183957, DIRECT
+indexexchange.com, 184856, DIRECT
+adtech.com, 10434, DIRECT
+aolcloud.net, 10434, DIRECT
+advertising.com, 10809, DIRECT
+google.com, pub-9268440883448925, DIRECT
+yieldmo.com, Fusion%20Media%20Group, DIRECT
+yieldmo.com, 1701426062972061316, DIRECT`,
+		}, {
 			Name:   "Full Example #1",
 			Domain: "https://www.ayan.net/",
 			Contents: `# Ads.txt file for example.com:
@@ -68,7 +83,13 @@ CONTACT=ayan@goosgoarch.com
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			Parse(test.Domain, test.Contents)
+			a, err := Parse(test.Domain, test.Contents)
+
+			if err != nil {
+				t.Fatalf("error: %v", err)
+			}
+
+			t.Logf("%#v", a)
 		})
 
 	}
@@ -76,15 +97,57 @@ CONTACT=ayan@goosgoarch.com
 }
 
 func TestFetchURL(t *testing.T) {
+	// some reandomly selected test domains
+	urls := []string{
+		"http://todaysgolfer.co.uk/ads.txt",
+		"http://rtl.be/ads.txt",
+		"http://cookingwithnonna.com/ads.txt",
+		"http://dangthatsdelicious.com/ads.txt",
+		"http://bebrainfit.com/ads.txt",
+		"http://lifemanagerka.pl/ads.txt",
+		"http://dotgolf.it/ads.txt",
+		"http://tapisdedouche.com/ads.txt",
+		"http://nestoria.in/ads.txt",
+		"http://inallyoudo.net/ads.txt",
+		"http://polishexpress.co.uk/ads.txt",
+		"http://abcya.com/ads.txt",
+		"http://rpgsite.net/ads.txt",
+		"http://notuxedo.com/ads.txt",
+		"http://kanonierzy.com/ads.txt",
+		"http://sun.com/ads.txt",
+		"http://avclub.com/ads.txt",
+		"http://marry-xoxo.com/ads.txt",
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
-	ads, err := Fetch(ctx, "https://ayan.net/ads/ads1.txt", "https://ayan.net/ads/ads2.txt")
+
+	srcmap := make(map[string]struct{})
+
+	for i := range urls {
+		srcmap[urls[i]] = struct{}{}
+	}
+
+	ads, err := Fetch(ctx, urls...)
 
 	if err != nil {
 		t.Logf("error: %s", err)
 	}
 
-	t.Logf("ads: %#v", ads)
+	for i := range ads {
+		t.Logf("ads: %#v", ads[i])
+	}
+
+	for i := range ads {
+		delete(srcmap, ads[i].Source)
+	}
+
+	if len(srcmap) > 0 {
+		t.Logf("We did not get a response from the following sources:")
+		for k := range srcmap {
+			t.Logf("> %s", k)
+		}
+	}
 }
 
 /*
