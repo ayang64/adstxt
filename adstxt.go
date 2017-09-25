@@ -3,6 +3,7 @@ package adstxt
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -129,25 +130,49 @@ func fetch(url string, rc chan<- AdsTxt, wg *sync.WaitGroup) {
 	rc <- a
 }
 
-func FetchAdTxt(urls ...string) ([]AdsTxt, error) {
+func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 	if len(urls) == 0 {
 		return nil, fmt.Errorf("No URLs supplied; nothing to do.")
 	}
 
-	results := make(chan AdsTxt, len(urls))
-	wg := sync.WaitGroup{}
+	ads := make(chan AdsTxt)
 
-	wg.Add(len(urls))
-	for _, url := range urls {
-		go fetch(url, results, &wg)
-	}
+	go func() {
+		// make sure we close we our ads channel on return.
+		defer close(ads)
+		results := make(chan AdsTxt, len(urls))
 
-	wg.Wait()
-	close(results)
+		wg := sync.WaitGroup{}
+		wg.Add(len(urls))
+
+		// dispatch web queries.
+		go func() {
+			for _, url := range urls {
+				go fetch(url, results, &wg)
+			}
+		}()
+
+		wg.Wait()
+		close(results)
+
+		for {
+			select {
+			case r, open := <-results:
+				if open == false {
+					// channel was closed.
+					return
+				}
+				ads <- r
+			case <-ctx.Done():
+				// deadline reached.
+				return
+			}
+		}
+	}()
 
 	var rc []AdsTxt
-	for r := range results {
-		rc = append(rc, r)
+	for a := range ads {
+		rc = append(rc, a)
 	}
 
 	return rc, nil

@@ -1,7 +1,9 @@
 package adstxt
 
 import (
+	"context"
 	"testing"
+	"time"
 )
 
 func TestParse(t *testing.T) {
@@ -74,13 +76,10 @@ CONTACT=ayan@goosgoarch.com
 }
 
 func TestFetchURL(t *testing.T) {
-	c := make(chan AdsTxt)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
 
-	go fetch("http://www.google.com", c, nil)
-
-	contents := <-c
-
-	t.Log("Contents: %#v", contents)
+	Fetch(ctx, "https://ayan.net/ads/ads1.txt", "https://ayan.net/ads/ads2.txt")
 }
 
 /*
