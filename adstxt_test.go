@@ -78,8 +78,13 @@ CONTACT=ayan@goosgoarch.com
 func TestFetchURL(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
+	ads, err := Fetch(ctx, "https://ayan.net/ads/ads1.txt", "https://ayan.net/ads/ads2.txt")
 
-	Fetch(ctx, "https://ayan.net/ads/ads1.txt", "https://ayan.net/ads/ads2.txt")
+	if err != nil {
+		t.Logf("error: %s", err)
+	}
+
+	t.Logf("ads: %#v", ads)
 }
 
 /*
