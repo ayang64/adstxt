@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 )
 
 type AdsTxt struct {
@@ -115,13 +114,7 @@ type fetchresult struct {
 	Contents string
 }
 
-func fetch(url string, rc chan<- AdsTxt, wg *sync.WaitGroup) {
-	defer func() {
-		if wg != nil {
-			wg.Done()
-		}
-	}()
-
+func fetch(url string, rc chan<- AdsTxt) {
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -152,16 +145,13 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 	go func() {
 		// make sure we close we our ads channel on return.
 		defer close(ads)
-		results := make(chan AdsTxt, len(urls))
-		defer close(results)
 
-		wg := sync.WaitGroup{}
-		wg.Add(len(urls))
+		results := make(chan AdsTxt)
 
 		// dispatch web queries.
 		go func() {
 			for _, url := range urls {
-				go fetch(url, results, &wg)
+				go fetch(url, results)
 			}
 		}()
 

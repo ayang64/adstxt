@@ -142,8 +142,12 @@ func TestFetchURL(t *testing.T) {
 		delete(srcmap, ads[i].Source)
 	}
 
-
-	for i := range a
+	if len(ads) > 0 {
+		t.Logf("Responses:")
+		for i := range ads {
+			t.Logf("> %s", ads[i].Source)
+		}
+	}
 
 	if len(srcmap) > 0 {
 		t.Logf("We did not get a response from the following sources:")
