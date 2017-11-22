@@ -83,13 +83,11 @@ CONTACT=ayan@goosgoarch.com
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			a, err := Parse(test.Domain, test.Contents)
+			_, err := Parse(test.Domain, test.Contents)
 
 			if err != nil {
 				t.Fatalf("error: %v", err)
 			}
-
-			t.Logf("%#v", a)
 		})
 
 	}
@@ -119,7 +117,7 @@ func TestFetchURL(t *testing.T) {
 		"http://marry-xoxo.com/ads.txt",
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 350*time.Millisecond)
 	defer cancel()
 
 	srcmap := make(map[string]struct{})
@@ -132,10 +130,6 @@ func TestFetchURL(t *testing.T) {
 
 	if err != nil {
 		t.Logf("error: %s", err)
-	}
-
-	for i := range ads {
-		t.Logf("ads: %#v", ads[i])
 	}
 
 	for i := range ads {

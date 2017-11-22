@@ -9,12 +9,15 @@ import (
 	"strings"
 )
 
+// AdsTxt stores all of the data associated with an adx.txt file.
 type AdsTxt struct {
 	Source   string // URL of ads.txt file this represents.
 	Partner  []Buyer
 	Variable map[string][]string
 }
 
+// Buyer encodes data assocated with one of the partners found in an ads.txt
+// file.
 type Buyer struct {
 	Domain                 string
 	PublisherID            string
@@ -22,15 +25,13 @@ type Buyer struct {
 	CertificationAuthority string
 }
 
-//
-// Attempts to split a comma separated buyer record.
-//
+// Attempt to split a comma separated buyer record.
 func (a *AdsTxt) parseBuyerRecord(line string) error {
 	// if we made it here, we should look for a comma separated list.
 	col := strings.Split(line, ",")
 	if len(col) != 3 && len(col) != 4 {
 		// Something is very wrong here.
-		return fmt.Errorf("Could not extract buyer records.")
+		return fmt.Errorf("could not extract buyer records")
 	}
 
 	if len(col) == 3 {
@@ -69,9 +70,11 @@ func (a *AdsTxt) parseVariable(line string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Line does not conain a variable.")
+	return fmt.Errorf("line does not conain a variable")
 }
 
+// Parse parses the supplied adx.txt data and returns a packed AdsTxt
+// structure.
 func Parse(srcurl, txt string) (AdsTxt, error) {
 	rc := AdsTxt{
 		Source:   srcurl,
@@ -79,7 +82,7 @@ func Parse(srcurl, txt string) (AdsTxt, error) {
 	}
 
 	if txt == "" {
-		return rc, fmt.Errorf("Given an empty string.  Nothing to parse.")
+		return rc, fmt.Errorf("given an empty string; nothing to parse")
 	}
 
 	// create a scanner that reads line by line.
@@ -135,9 +138,10 @@ func fetch(url string, rc chan<- AdsTxt) {
 	rc <- a
 }
 
+// Fetch downloads and parses ads.txt files at each of the supplied URLs.
 func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 	if len(urls) == 0 {
-		return nil, fmt.Errorf("No URLs supplied; nothing to do.")
+		return nil, fmt.Errorf("no URLs supplied; nothing to do")
 	}
 
 	ads := make(chan AdsTxt)
@@ -155,14 +159,11 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 			}
 		}()
 
-		for i := 0; true; {
+		// wait for respnses from each of the servers.
+		for i := 0; i < len(urls); i++ {
 			select {
 			case r := <-results:
 				ads <- r
-				i++
-				if i == len(urls) {
-					return
-				}
 			case <-ctx.Done():
 				// deadline reached.
 				return
