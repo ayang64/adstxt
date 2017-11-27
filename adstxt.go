@@ -76,17 +76,16 @@ func (a *AdsTxt) parseVariable(line string) error {
 // Parse parses the supplied adx.txt data and returns a packed AdsTxt
 // structure.
 func Parse(srcurl, txt string) (AdsTxt, error) {
+	if txt == "" {
+		return rc, fmt.Errorf("given an empty string; nothing to parse")
+	}
+
 	rc := AdsTxt{
 		Source:   srcurl,
 		Variable: make(map[string][]string),
 	}
 
-	if txt == "" {
-		return rc, fmt.Errorf("given an empty string; nothing to parse")
-	}
-
 	// create a scanner that reads line by line.
-
 	for scanner := bufio.NewScanner(strings.NewReader(txt)); scanner.Scan(); {
 		line := strings.TrimSpace(scanner.Text())
 
