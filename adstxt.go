@@ -75,9 +75,9 @@ func (a *AdsTxt) parseVariable(line string) error {
 
 // Parse parses the supplied adx.txt data and returns a packed AdsTxt
 // structure.
-func Parse(srcurl, txt string) (AdsTxt, error) {
+func Parse(srcurl, txt string) (*AdsTxt, error) {
 	if txt == "" {
-		return rc, fmt.Errorf("given an empty string; nothing to parse")
+		return nil, fmt.Errorf("given an empty string; nothing to parse")
 	}
 
 	rc := AdsTxt{
@@ -108,7 +108,7 @@ func Parse(srcurl, txt string) (AdsTxt, error) {
 		// and the loop will continue anyway.
 		rc.parseBuyerRecord(line)
 	}
-	return rc, nil
+	return &rc, nil
 }
 
 type fetchresult struct {
@@ -116,25 +116,24 @@ type fetchresult struct {
 	Contents string
 }
 
-func fetch(url string, rc chan<- AdsTxt) {
+func fetch(url string) *AdsTxt {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		rc <- AdsTxt{Source: url}
-		return
+		return &AdsTxt{Source: url}
 	}
 
 	defer resp.Body.Close()
 
 	if err != nil {
-		return
+		return nil
 	}
 
 	var buf bytes.Buffer
 	buf.ReadFrom(resp.Body)
 
 	a, _ := Parse(url, buf.String())
-	rc <- a
+	return a
 }
 
 // Fetch downloads and parses ads.txt files at each of the supplied URLs.
@@ -143,18 +142,20 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 		return nil, fmt.Errorf("no URLs supplied; nothing to do")
 	}
 
-	ads := make(chan AdsTxt)
+	ads := make(chan *AdsTxt)
 
 	go func() {
 		// make sure we close we our ads channel on return.
 		defer close(ads)
 
-		results := make(chan AdsTxt)
+		results := make(chan *AdsTxt)
 
 		// dispatch web queries.
 		go func() {
 			for _, url := range urls {
-				go fetch(url, results)
+				go func() {
+					results <- fetch(url)
+				}()
 			}
 		}()
 
@@ -172,7 +173,7 @@ func Fetch(ctx context.Context, urls ...string) ([]AdsTxt, error) {
 
 	var rc []AdsTxt
 	for a := range ads {
-		rc = append(rc, a)
+		rc = append(rc, *a)
 	}
 
 	return rc, nil
